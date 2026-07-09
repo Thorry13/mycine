@@ -11,19 +11,19 @@
 git clone https://github.com/yourusername/mycine.git
 ```
 
-2. Set the MYCINE_LOCATION environment variable:
+2. Set the `MYCINE_LOCATION` environment variable:
 ```bash
 export MYCINE_LOCATION=/path/to/mycine
 ```
 
-3. Set the MYCINE_AUTH and MYCINE_AUTH_TOKEN environement variables.
+3. Set the `MYCINE_AUTH` and `MYCINE_AUTH_TOKEN` environement variables.
 
 ```bash
 export MYCINE_AUTH=...
 export MYCINE_AUTH_TOKEN=...
 ```
 
-> \:warning\:⚠️ **Warning:** Retrieving Allocine tokens requires technical steps (proxy setup, rooted/emulated devices). See **Authentication** section for more details
+> \:warning\: **Warning:** Retrieving Allocine tokens requires technical steps (proxy setup, rooted/emulated devices). See **Authentication** section for more details
 
 4. Have mycine.sh executable and add it to the PATH. For instance:
 
