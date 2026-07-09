@@ -160,7 +160,7 @@ def get_movie_infos(movieTitle, director=None):
             text = text.replace('en VOD', '').replace('en DVD', '').replace('sur Netflix', '').replace('Disney+', '')
             p = re.compile('[^— \t\n\r\f\v]')
             infos = "".join(p.findall(text))
-            _, duration, genres = infos.split('/')
+            _, duration, genres = infos.split('|')
             data['duration'] = datetime.strptime(duration, '%Hh%Mmin') - datetime.strptime('0','%H') # Duration
             data['genres'] = genres.split(',') # Genres
         except: pass
