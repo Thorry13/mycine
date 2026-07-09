@@ -12,17 +12,15 @@ from dateutil.parser import parse
 import sqlite3
 from tabulate import tabulate
 from unidecode import unidecode
+import os
 
 ALLOCINE_API_URL = "https://graph.allocine.fr/v1/mobile"
 ALLOCINE_AUTOCOMPLETE_URL = "https://www.allocine.fr/_/autocomplete/mobile/movie/"
 MOVIE_BASE_URL = "https://www.allocine.fr/film/fichefilm_gen_cfilm="
-# ALLOCINE_PARTNER_KEY = '100ED1DA33EB'
-# ALLOCINE_SECRET_KEY = '1a1ed8c1bed24d60ae3472eed1da33eb'
-# ANDROID_USER_AGENT = "Mozilla/5.0 (Linux; U; Android $v; fr-fr; Nexus One Build/FRF91) AppleWebKit/5$b.$c (KHTML, like Gecko) Version/$a.$a Mobile Safari/5$b.$c"
 ANDROID_USER_AGENT = 'androidapp/0.0.1'
 
-AC_AUTH_VAR = 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE2NzU0NDA1MzcsImV4cCI6MTgzMzU4MDc5OSwidXNlcm5hbWUiOiJhbm9ueW1vdXMiLCJhcHBsaWNhdGlvbl9uYW1lIjoibW9iaWxlIiwidXVpZCI6ImUwZDMxOGYzLTM0ZjAtNGVkZS05OTg0LWY4NTJiYzk0MDZjMSIsInNjb3BlIjpudWxsfQ.fsZIpQa1L6uhs7qohqOXs6PkV2Jxyz-3vWB7y6_FtqaNtjwkJkZA-vmh1FLVTnS65pWKuwy7bN_RuCq-a7R7TWCtIGE0AEAvsHX4fR0hg8u5n-6qqdmVbMk3iqskwOiuybJnqjBOUHsxsRF2pPQ9KJcvxRCfWOHoBY8qGMbxehEqOe20H-i58fQfW1P7amxoo08w0n9Mq_VxJx5Aa0rH5IHy_OEmaMQcCT7ICWD6wSxM34FyZt_IMh-EMdbuX7ML9t3YHi8f7Fu76RKFDPE3l2QFQ48X2S6hrG5k3_cw6t-JwmxicPK1-EENsEk42nja00-YO-Wk7bfPhZ1BT4VtKP48gLvb8pcFitqpTrCTjacJOMrIWvmzTLK1uUW39Ygjv8yhi9TzDfib1a6EwSChZJ8WzCpucliJW6VVDweNQ0B0CHHlDyopUgVjokHaOdQjz_zV058ZL-kK5Cg4ngfehAJMmg0d6zU6EezsKueJRUGENn6105ymW4HC2ZEN_ANbqMHIcM1dJ2lrbkNgJ8G0xGeW_LZq-d8YF2yHHd6ZwmovtSR9QJ99ZlIBX8jF60GnthkXgukQ5tu9dXcCrV6PzBb3eP5NJoUo-t4tiwgINNEyjmQT11U_mgwHGI36p-RBw7Cx_fScq4cGO2z3X5bRF508uf2nxxf_Adi7vnvwxpA'
-AC_AUTH_TOKEN_VAR = 'cQ8YdbcKQ9CJPldcPPdRdC:APA91bEIBOFty4zsGITyke1Vnu4SANGvaml0LR8Y-KNwXBnVwb-_Z5QKwbMDmGcpQUjjpheRjPiNFc-1FSvCAtQtuK7ED96gxditiO96IuXZNCDYuyTPg7A'
+AC_AUTH_VAR = os.getenv("MYCINE_AUTH")
+AC_AUTH_TOKEN_VAR = os.getenv("MYCINE_AUTH_TOKEN")
 
 PATH_DB = '/home/remy/Projects/MyCine/mycine.db'
 
