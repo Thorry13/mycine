@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/remy/Projects/MyCine
+cd $MYCINE_LOCATION 
 case $1 in
     -a | --add)
             if [ $# -eq 4 ] && [ $3 = --dir ]
