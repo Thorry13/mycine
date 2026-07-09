@@ -13,11 +13,16 @@ import sqlite3
 from tabulate import tabulate
 from unidecode import unidecode
 
-ALLOCINE_BASE_URL = "http://api.allocine.fr/rest/v3/"
-# ALLOCINE_PARTNER_KEY = '100043982026'
-ALLOCINE_PARTNER_KEY = '100ED1DA33EB'
-ALLOCINE_SECRET_KEY = '1a1ed8c1bed24d60ae3472eed1da33eb'
-ANDROID_USER_AGENT = "Mozilla/5.0 (Linux; U; Android $v; fr-fr; Nexus One Build/FRF91) AppleWebKit/5$b.$c (KHTML, like Gecko) Version/$a.$a Mobile Safari/5$b.$c"
+ALLOCINE_API_URL = "https://graph.allocine.fr/v1/mobile"
+ALLOCINE_AUTOCOMPLETE_URL = "https://www.allocine.fr/_/autocomplete/mobile/movie/"
+MOVIE_BASE_URL = "https://www.allocine.fr/film/fichefilm_gen_cfilm="
+# ALLOCINE_PARTNER_KEY = '100ED1DA33EB'
+# ALLOCINE_SECRET_KEY = '1a1ed8c1bed24d60ae3472eed1da33eb'
+# ANDROID_USER_AGENT = "Mozilla/5.0 (Linux; U; Android $v; fr-fr; Nexus One Build/FRF91) AppleWebKit/5$b.$c (KHTML, like Gecko) Version/$a.$a Mobile Safari/5$b.$c"
+ANDROID_USER_AGENT = 'androidapp/0.0.1'
+
+AC_AUTH_VAR = 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE2NzU0NDA1MzcsImV4cCI6MTgzMzU4MDc5OSwidXNlcm5hbWUiOiJhbm9ueW1vdXMiLCJhcHBsaWNhdGlvbl9uYW1lIjoibW9iaWxlIiwidXVpZCI6ImUwZDMxOGYzLTM0ZjAtNGVkZS05OTg0LWY4NTJiYzk0MDZjMSIsInNjb3BlIjpudWxsfQ.fsZIpQa1L6uhs7qohqOXs6PkV2Jxyz-3vWB7y6_FtqaNtjwkJkZA-vmh1FLVTnS65pWKuwy7bN_RuCq-a7R7TWCtIGE0AEAvsHX4fR0hg8u5n-6qqdmVbMk3iqskwOiuybJnqjBOUHsxsRF2pPQ9KJcvxRCfWOHoBY8qGMbxehEqOe20H-i58fQfW1P7amxoo08w0n9Mq_VxJx5Aa0rH5IHy_OEmaMQcCT7ICWD6wSxM34FyZt_IMh-EMdbuX7ML9t3YHi8f7Fu76RKFDPE3l2QFQ48X2S6hrG5k3_cw6t-JwmxicPK1-EENsEk42nja00-YO-Wk7bfPhZ1BT4VtKP48gLvb8pcFitqpTrCTjacJOMrIWvmzTLK1uUW39Ygjv8yhi9TzDfib1a6EwSChZJ8WzCpucliJW6VVDweNQ0B0CHHlDyopUgVjokHaOdQjz_zV058ZL-kK5Cg4ngfehAJMmg0d6zU6EezsKueJRUGENn6105ymW4HC2ZEN_ANbqMHIcM1dJ2lrbkNgJ8G0xGeW_LZq-d8YF2yHHd6ZwmovtSR9QJ99ZlIBX8jF60GnthkXgukQ5tu9dXcCrV6PzBb3eP5NJoUo-t4tiwgINNEyjmQT11U_mgwHGI36p-RBw7Cx_fScq4cGO2z3X5bRF508uf2nxxf_Adi7vnvwxpA'
+AC_AUTH_TOKEN_VAR = 'cQ8YdbcKQ9CJPldcPPdRdC:APA91bEIBOFty4zsGITyke1Vnu4SANGvaml0LR8Y-KNwXBnVwb-_Z5QKwbMDmGcpQUjjpheRjPiNFc-1FSvCAtQtuK7ED96gxditiO96IuXZNCDYuyTPg7A'
 
 PATH_DB = '/home/remy/Projects/MyCine/mycine.db'
 
@@ -71,16 +76,18 @@ def display_info(movie, director=None):
         print(movie_infos['title'].upper())
         print('\tDirected by : '+", ".join(movie_infos['directors']))
         print('\tOriginal title : '+movie_infos['original_title'])
-        print('\tDate : '+movie_infos['date'].strftime('%d %B %Y'))
+        if movie_infos['date'] is not None:
+            print('\tDate : '+movie_infos['date'].strftime('%d %B %Y'))
         print('\tDuration : '+str(movie_infos['duration']))
         print('\tActors : '+", ".join(movie_infos['actors']))
-        print('\tGenres : '+", ".join(movie_infos['genres']))
+        if movie_infos['genres']:
+            print('\tGenres : '+", ".join(movie_infos['genres']))
         print('\tAllocine : '+movie_infos['page_link'])
         print('\nRATINGS')
         if ratings[0]: print('\tSpectators : {}'.format(ratings[0]))
         if ratings[1]: print('\tPress : {}'.format(ratings[1]))
-        print('\nSYNOPSIS')
-        print('\t'+movie_infos['synopsis'])
+        print('\nSYNOPSIS\n\t', end='')
+        print(movie_infos['synopsis'])
         print('\nIn database : '+ ('Yes' if in_db else 'No'))
         if in_db:
               print('Watched : '+ ('Yes ('+in_db['date_watched']+')' if in_db['watched'] else 'No'))
@@ -97,25 +104,27 @@ def get_movie_infos(movieTitle, director=None):
     try:
         # Get information from Allocine API
         movieTitle = unidecode(movieTitle)
-        movieTitle = movieTitle.replace(' ', '+')
-        sed = time.strftime("%Y%m%d")
-        sha1 = hashlib.sha1()
-        PARAMETER_STRING = "partner=" + ALLOCINE_PARTNER_KEY + "&q=" + movieTitle + "&format=json&sed="+sed
-        SIG_STRING = bytes('search' + PARAMETER_STRING + ALLOCINE_SECRET_KEY, 'utf-8')
-        sha1.update(SIG_STRING)
-        SIG_SHA1 = sha1.digest()
-        SIG_B64 = b64encode(SIG_SHA1).decode('utf-8')
-        sig = urlencode({SIG_B64: ''})[:-1]
-        URL = ALLOCINE_BASE_URL + 'search?' + PARAMETER_STRING + "&sig=" + sig
-        headers = {'User-Agent': ANDROID_USER_AGENT}
-        results = requests.get(URL, headers=headers).text
-        movies = json.loads(results)["feed"]["movie"]
+        GET_URL = ALLOCINE_AUTOCOMPLETE_URL + movieTitle.replace(' ', '+')
+        headers = {'User-Agent': ANDROID_USER_AGENT,
+           'Content-Type' : 'application/json',
+           'Authorization' : AC_AUTH_VAR,
+           'AC-Auth-Token' : AC_AUTH_TOKEN_VAR
+          }
+        get_response = requests.get(GET_URL, headers=headers).text
+        get_results = json.loads(get_response)['results']
         if director:
-            metaDico = [movie for movie in movies 
-                              if "castingShort" in movie.keys() and "directors" in movie["castingShort"].keys()
-                              and director.lower() in movie["castingShort"]["directors"].lower()][0]
-        else:
-            metaDico = movies[0]
+            director_presence_check = lambda director_i : director.lower() in director_i.lower()
+            get_results = [movie for movie in get_results
+                                if 'data' in movie.keys()
+                                    and 'director_name' in movie['data'].keys()
+                                    and True in list(map(director_presence_check, movie['data']['director_name']))]
+        movie_id0 = get_results[0]['entity_id']
+        movie_id = b64encode(bytes('Movie:'+movie_id0, 'utf-8')).decode('utf-8')
+        query = "query MovieQuery($id: String, $longSynopsis: Boolean, $country: CountryCode) { movie(id: $id) { __typename ...MovieFragment } } fragment MovieFragment on Movie  { __typename id internalId title originalTitle genres type poster { __typename id internalId url } synopsis(long: $longSynopsis) cast(first: 3)  { __typename edges  { __typename node { __typename role actor { __typename id internalId firstName lastName } voiceActor { __typename id internalId firstName lastName } originalVoiceActor { __typename id internalId firstName lastName } } } }stats { __typename userRating { __typename score(base: 5) } pressReview { __typename score(base: 5) } }credits(department: DIRECTION, first: 5) { __typename edges{ __typename node{ __typename person{ __typename id firstName lastName } position { __typename name } } } } releases(type: [RELEASED], country: $country) { __typename releaseDate { __typename date precision } } data { __typename productionYear } }"
+        variables = {"id":movie_id, "longSynopsis":True, "country":"FRANCE"}
+
+        post_response = requests.post(ALLOCINE_API_URL, headers=headers, json = {'query':query, 'variables':variables}).text
+        post_results = json.loads(post_response)['data']['movie']
 
         # Initialize output
         data = {
@@ -133,59 +142,68 @@ def get_movie_infos(movieTitle, director=None):
                }
 
         # Load html page
-        url = metaDico['link'][0]['href']
-        data["page_link"] = url
-        page = urllib.request.urlopen(url)
+        movie_url = MOVIE_BASE_URL + movie_id0 + '.html'
+        req = urllib.request.Request(url=movie_url, headers=headers)
+        page = urllib.request.urlopen(req).read()
         soup = BeautifulSoup(page, 'html.parser')
+        data["page_link"] = movie_url
 
         # Title
-        tag_title = soup.find(attrs={"class":"titlebar-title-lg"})
-        data["title"] = tag_title.getText()
-        data["original_title"] = metaDico['originalTitle']
+        data["title"] = post_results['title']
+        data["original_title"] = post_results['originalTitle']
 
         # Poster
-        tag_poster = soup.find(attrs={"class":"thumbnail-img"})
-        data["poster_link"] = tag_poster.attrs["src"]
+        data["poster_link"] = post_results['poster']['url']
 
-        # Meta Infos
-        tag_info = soup.find(attrs={"class":"meta-body-info"})
-        text = tag_info.getText()
-        text = text.replace('en VOD', '')
-        text = text.replace('en DVD', '')
-        text = text.replace('sur Netflix', '')
-        text = text.replace('Disney+', '')
-        p = re.compile('[^— \t\n\r\f\v]')
-        infos = "".join(p.findall(text))
-        date, duration, genres = infos.split('/')
-        data['date'] = parse(replace_month(date)) # Date
-        data['duration'] = datetime.strptime(duration, '%Hh%Mmin') - datetime.strptime('0','%H') # Duration
-        data['genres'] = genres.split(',') # Genres
+        # Genres/Duration
+        try:
+            tag_info = soup.find(attrs={"class":"meta-body-info"})
+            text = tag_info.getText()
+            text = text.replace('en VOD', '').replace('en DVD', '').replace('sur Netflix', '').replace('Disney+', '')
+            p = re.compile('[^— \t\n\r\f\v]')
+            infos = "".join(p.findall(text))
+            _, duration, genres = infos.split('/')
+            data['duration'] = datetime.strptime(duration, '%Hh%Mmin') - datetime.strptime('0','%H') # Duration
+            data['genres'] = genres.split(',') # Genres
+        except: pass
+
+        # Release date
+        if 'releases' in post_results.keys() and post_results['releases']:
+            data['date'] = parse(post_results['releases'][0]['releaseDate']['date'])
 
         # Directors
-        tag_dirs = soup.find(attrs={"class":"meta-body-direction"})
-        directors = tag_dirs.find_all(attrs={"class":"blue-link"})
-        data["directors"] = [director.getText() for director in directors]
+        data['directors'] = ['{}'.format(person['node']['person']['firstName'] + ' '
+                         if person['node']['person']['firstName'] 
+                         else '') +
+             person['node']['person']['lastName'] 
+             for person in post_results['credits']['edges']]
 
         # Actors
-        tag_act = soup.find(attrs={"class":"meta-body-actor"})
-        data["actors"] = [child.string for child in list(tag_act.children) if '\n' not in child.string][1:]
+        if post_results['cast']['edges'][0]['node']['actor'] :
+            actor_var = 'actor'
+        else :
+            actor_var = 'voiceActor'
+        data['actors'] = ['{}'.format(person['node'][actor_var]['firstName'] + ' ' 
+                      if person['node'][actor_var]['firstName'] 
+                      else '') +
+          person['node'][actor_var]['lastName'] 
+             for person in post_results['cast']['edges']]
 
         # Ratings
         try:
-            data["ratings"]["press"] = round(metaDico["statistics"]["pressRating"], 1)
+            data["ratings"]["press"] = round(post_results['stats']['pressReview']['score'], 1)
         except: pass
         try:
-            data["ratings"]["spectators"] = round(metaDico["statistics"]["userRating"], 1)
+            data["ratings"]["spectators"] = round(post_results['stats']['userRating']['score'], 1)
         except: pass
 
         # Synopsis
-        tag_syn = soup.find(attrs={"id":"synopsis-details"})
-        tag_syn = tag_syn.find(attrs={"class":"content-txt"})
-        p = re.compile('[\s]{2,}')
-        text = tag_syn.getText()
-        for space in p.findall(text):
-            text = text.replace(space, '')
-        data["synopsis"] = text.replace('\n', '')
+        if post_results['synopsis']:
+            html = post_results['synopsis']
+            synopsis = BeautifulSoup(html, 'html.parser').text
+            data["synopsis"] = synopsis.replace('\n', '')
+
+        # Return results
         return data
                     
     except Exception as e:
@@ -321,6 +339,10 @@ def set_video_link(movie, director=None, link=None):
     except Exception as e:
         print('set_video_link : An error occurred with "{}" :'.format(movie), e)
 
+if __name__ == "__main__":
+    print('main...')
+    get_movie_infos('iron')
+    
 
 
 
